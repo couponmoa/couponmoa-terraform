@@ -38,6 +38,10 @@ resource "aws_ecs_task_definition" "gateway_task" {
         {
           name  = "JWT_SECRET_KEY"
           value = var.jwt_secret_key
+        },
+        {
+          name  = "REDIS_HOST"
+          value = "10.0.11.28"
         }
       ],
       logConfiguration = {
