@@ -32,3 +32,13 @@ output "vpc_id" {
 output "msa_service_arns" {
   value = { for s in aws_ecs_service.msa_service : s.key => s.value.arn }
 }
+
+# s3 버킷 이름
+output "s3_bucket_name" {
+  value = aws_s3_bucket.image_bucket.id
+}
+
+# cloudfront 도메인
+output "cloudfront_domain_name" {
+  value       = aws_cloudfront_distribution.cdn.domain_name
+}
