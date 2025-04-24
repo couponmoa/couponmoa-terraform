@@ -24,7 +24,7 @@ resource "aws_lb_target_group" "ecs_tg" {
   vpc_id      = aws_vpc.vpc.id
 
   health_check {
-    path                = "/"
+    path                = "/actuator/health"
     protocol            = "HTTP"
     matcher             = "200"
     interval            = 30

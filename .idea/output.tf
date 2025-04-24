@@ -29,8 +29,11 @@ output "vpc_id" {
 }
 
 # ECS service arn
-output "msa_service_arns" {
-  value = { for s in aws_ecs_service.msa_service : s.key => s.value.arn }
+output "msa_service_ids" {
+  value = {
+    for name, svc in aws_ecs_service.msa_service :
+    name => svc.id
+  }
 }
 
 # s3 버킷 이름
@@ -46,7 +49,7 @@ output "cloudfront_domain_name" {
 # sqs queue url
 output "sqs_queue_urls" {
   value = {
-    email_alert  = aws_sqs_queue.queues["email_alert"].url
-    coupon_alert = aws_sqs_queue.queues["coupon_alert"].url
+    email_alert  = aws_sqs_queue.email_alert_queue.url
+    coupon_alert = aws_sqs_queue.coupon_alert_queue.url
   }
 }

@@ -18,22 +18,38 @@ resource "aws_ecs_task_definition" "gateway_task" {
   execution_role_arn       = aws_iam_role.execution_role.arn
   task_role_arn            = aws_iam_role.execution_role.arn
 
-  container_definitions = <<DEFINITION
-  [
+  container_definitions = jsonencode([
     {
-      "name": "${var.APP_NAME}-${var.Environment}-container",
-      "image": "${aws_ecr_repository.repository.repository_url}:latest",
-      "essential": true,
-      "portMappings": [
+      name      = "${var.APP_NAME}-${var.Environment}-container",
+      image     = "${aws_ecr_repository.repository.repository_url}:latest",
+      essential = true,
+      cpu       = 256,
+      memory    = 512,
+      portMappings = [
         {
-          "containerPort": 3000
+          containerPort = 3000
         }
       ],
-      "cpu": 256,
-      "memory": 512
+      environment = [
+        {
+          name  = "SPRING_PROFILES_ACTIVE"
+          value = "prod"
+        },
+        {
+          name  = "JWT_SECRET_KEY"
+          value = var.jwt_secret_key
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/${var.APP_NAME}"
+          awslogs-region        = "ap-northeast-2"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
-  ]
-  DEFINITION
+  ])
 
   tags = {
     Name        = "${var.APP_NAME}-ecs-task"
@@ -164,7 +180,7 @@ resource "aws_ecs_service" "redis_service" {
 
   network_configuration {
     subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-    security_groups = [aws_security_group.ecs_sg.id]
+    security_groups = [aws_security_group.redis_sg.id]
     assign_public_ip = false
   }
 }

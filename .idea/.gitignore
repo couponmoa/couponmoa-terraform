@@ -15,3 +15,7 @@
 .terraformrc
 .terraform.lock
 terraform.tfvars
+
+/dist
+.idea/
+*.iml

@@ -19,3 +19,4 @@ variable "msa_services" {
 
 variable "DB_USER" {}
 variable "DB_PASSWORD" {}
+variable "jwt_secret_key" {}
