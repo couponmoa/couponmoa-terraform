@@ -1,0 +1,125 @@
+resource "aws_ecs_cluster" "cluster" {
+  name = "${var.APP_NAME}-${var.Environment}-cluster"
+
+  tags = {
+    Name        = "${var.APP_NAME}-ecs"
+    Environment = var.Environment
+  }
+}
+
+// gateway server
+// Task Definition 등록 (ECR 이미지 사용)
+resource "aws_ecs_task_definition" "gateway_task" {
+  family                   = "${var.APP_NAME}-gateway"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.execution_role.arn
+  task_role_arn            = aws_iam_role.execution_role.arn
+
+  container_definitions = <<DEFINITION
+  [
+    {
+      "name": "${var.APP_NAME}-${var.Environment}-container",
+      "image": "${aws_ecr_repository.repository.repository_url}:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000
+        }
+      ],
+      "cpu": 256,
+      "memory": 512
+    }
+  ]
+  DEFINITION
+
+  tags = {
+    Name        = "${var.APP_NAME}-ecs-task"
+    Environment = var.Environment
+  }
+}
+
+data "aws_ecs_task_definition" "latest" {
+  task_definition = aws_ecs_task_definition.gateway_task.family
+}
+
+resource "aws_ecs_service" "gateway_service" {
+  name                = "${var.APP_NAME}-${var.Environment}-service"
+  cluster             = aws_ecs_cluster.cluster.id
+  task_definition     = "${aws_ecs_task_definition.gateway_task.family}:${max(aws_ecs_task_definition.gateway_task.revision, data.aws_ecs_task_definition.latest.revision)}"
+  launch_type         = "FARGATE"
+  scheduling_strategy = "REPLICA"
+  desired_count       = 1
+
+  network_configuration {
+    subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.ecs_tg.arn
+    container_name   = "${var.APP_NAME}-${var.Environment}-container"
+    container_port   = 3000
+  }
+
+  depends_on = [aws_lb_listener.alb_listener]
+}
+
+// user, store, coupon, notification, scheduling 서버
+resource "aws_ecs_task_definition" "msa_task" {
+  for_each                = toset(var.msa_services)
+  family                  = "${var.APP_NAME}-${each.key}"
+  requires_compatibilities = ["FARGATE"]
+  network_mode            = "awsvpc"
+  cpu                     = "256"
+  memory                  = "512"
+  execution_role_arn      = aws_iam_role.execution_role.arn
+  task_role_arn           = aws_iam_role.execution_role.arn
+
+  container_definitions = <<DEFINITION
+  [
+    {
+      "name": "${var.APP_NAME}-${var.Environment}-${each.key}-container",
+      "image": "${aws_ecr_repository.msa_repos[each.key].repository_url}:${each.key}-latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": ${lookup({"user"=8081, "store"=8082, "coupon"=8083, "notification"=8084, "scheduling"=8085}, each.key)}
+        }
+      ],
+      "cpu": 256,
+      "memory": 512
+    }
+  ]
+  DEFINITION
+
+  tags = {
+    Name        = "${var.APP_NAME}-${each.key}-task"
+    Environment = var.Environment
+  }
+}
+
+data "aws_ecs_task_definition" "msa_latest" {
+  for_each = toset(var.msa_services)
+  task_definition = aws_ecs_task_definition.msa_task[each.key].family
+}
+
+resource "aws_ecs_service" "msa_service" {
+  for_each             = toset(var.msa_services)
+  name                 = "${var.APP_NAME}-${var.Environment}-${each.key}-service"
+  cluster              = aws_ecs_cluster.cluster.id
+  task_definition      = "${aws_ecs_task_definition.msa_task[each.key].family}:${max(aws_ecs_task_definition.msa_task[each.key].revision, data.aws_ecs_task_definition.msa_latest[each.key].revision)}"
+  launch_type          = "FARGATE"
+  scheduling_strategy  = "REPLICA"
+  desired_count        = 1
+
+  network_configuration {
+    subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip = false
+  }
+}
+

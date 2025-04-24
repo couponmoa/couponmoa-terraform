@@ -1,0 +1,19 @@
+resource "aws_ecr_repository" "repository" {
+  name = "${var.APP_NAME}-${var.Environment}-ecr"
+
+  tags = {
+    Name        = "${var.APP_NAME}-ecr"
+    Environment = var.Environment
+  }
+}
+
+resource "aws_ecr_repository" "msa_repos" {
+  for_each = toset(var.msa_services)
+
+  name = "${var.APP_NAME}-${var.Environment}-${each.key}-ecr"
+
+  tags = {
+    Name        = "${var.APP_NAME}-${each.key}-ecr"
+    Environment = var.Environment
+  }
+}
