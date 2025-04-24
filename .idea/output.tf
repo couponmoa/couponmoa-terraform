@@ -42,3 +42,11 @@ output "s3_bucket_name" {
 output "cloudfront_domain_name" {
   value       = aws_cloudfront_distribution.cdn.domain_name
 }
+
+# sqs queue url
+output "sqs_queue_urls" {
+  value = {
+    email_alert  = aws_sqs_queue.queues["email_alert"].url
+    coupon_alert = aws_sqs_queue.queues["coupon_alert"].url
+  }
+}
