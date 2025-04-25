@@ -9,6 +9,7 @@ resource "aws_iam_role" "execution_role" {
   }
 }
 
+#s3 접근 정책
 resource "aws_iam_policy" "s3_user_profile_access" {
   name = "${var.APP_NAME}-${var.Environment}-s3-access"
 
