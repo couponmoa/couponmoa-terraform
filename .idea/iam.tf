@@ -82,6 +82,31 @@ resource "aws_iam_policy" "s3_user_profile_access" {
   })
 }
 
+resource "aws_iam_policy" "terraform_lock_dynamodb_access" {
+  name = "terraform-dynamodb-lock-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:UpdateItem"
+        ],
+        Resource = "arn:aws:dynamodb:ap-northeast-2:588738590244:table/terraform-lock"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_user_policy_attachment" "attach_lock_policy" {
+  user       = "couponmoa-accessuser"
+  policy_arn = aws_iam_policy.terraform_lock_dynamodb_access.arn
+}
+
 # IAM ROLE에 SQS 정책 추가
 resource "aws_iam_role_policy_attachment" "attach_sqs_policy" {
   role       = aws_iam_role.execution_role.name
