@@ -23,6 +23,7 @@ resource "aws_s3_bucket_policy" "image_bucket_policy" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
+      # CloudFront에 대한 GetObject 허용
       {
         Sid       = "AllowCloudFrontServicePrincipalReadOnly",
         Effect    = "Allow",
@@ -36,6 +37,20 @@ resource "aws_s3_bucket_policy" "image_bucket_policy" {
             "AWS:SourceArn" = aws_cloudfront_distribution.cdn.arn
           }
         }
+      },
+      # IAM Role (ECS Task)에 대한 접근 허용
+      {
+        Sid       = "AllowEcsTaskRoleAccess",
+        Effect    = "Allow",
+        Principal = {
+          AWS = aws_iam_role.execution_role.arn
+        },
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        Resource = "${aws_s3_bucket.image_bucket.arn}/*"
       }
     ]
   })

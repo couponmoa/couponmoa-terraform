@@ -9,6 +9,30 @@ resource "aws_iam_role" "execution_role" {
   }
 }
 
+resource "aws_iam_policy" "s3_user_profile_access" {
+  name = "${var.APP_NAME}-${var.Environment}-s3-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        Resource = "arn:aws:s3:::couponmoa-user-profile-prod/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
+  role       = aws_iam_role.execution_role.name
+  policy_arn = aws_iam_policy.s3_user_profile_access.arn
+}
+
 # Assume Role Policy Document
 data "aws_iam_policy_document" "assume_role_policy" {
   statement {
