@@ -122,7 +122,7 @@ resource "aws_ecs_task_definition" "msa_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.28"
+          value = "10.0.11.222"
         },
         {
           name  = "RDS_URL"
