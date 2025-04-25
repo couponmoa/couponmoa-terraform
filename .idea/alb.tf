@@ -27,8 +27,8 @@ resource "aws_lb_target_group" "ecs_tg" {
     path                = "/actuator/health"
     protocol            = "HTTP"
     matcher             = "200"
-    interval            = 30
-    timeout             = 5
+    interval            = 300
+    timeout             = 10
     healthy_threshold   = 3
     unhealthy_threshold = 2
   }

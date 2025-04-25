@@ -99,22 +99,54 @@ resource "aws_ecs_task_definition" "msa_task" {
   execution_role_arn      = aws_iam_role.execution_role.arn
   task_role_arn           = aws_iam_role.execution_role.arn
 
-  container_definitions = <<DEFINITION
-  [
+  container_definitions = jsonencode([
     {
-      "name": "${var.APP_NAME}-${var.Environment}-${each.key}-container",
-      "image": "${aws_ecr_repository.msa_repos[each.key].repository_url}:${each.key}-latest",
-      "essential": true,
-      "portMappings": [
+      name      = "${var.APP_NAME}-${var.Environment}-${each.key}-container"
+      image     = "${aws_ecr_repository.msa_repos[each.key].repository_url}:latest"
+      essential = true
+      cpu       = 256
+      memory    = 512
+      portMappings = [
         {
-          "containerPort": ${lookup({"user"=8081, "store"=8082, "coupon"=8083, "notification"=8084, "scheduling"=8085}, each.key)}
+          containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+        }
+      ]
+      environment = [
+        {
+          name  = "SPRING_PROFILES_ACTIVE"
+          value = "prod"
+        },
+        {
+          name  = "JWT_SECRET_KEY"
+          value = var.jwt_secret_key
+        },
+        {
+          name  = "REDIS_HOST"
+          value = "10.0.11.28"
+        },
+        {
+          name  = "RDS_URL"
+          value = var.rds_url
+        },
+        {
+          name  = "RDS_USERNAME"
+          value = var.DB_USER
+        },
+        {
+          name  = "RDS_PASSWORD"
+          value = var.DB_PASSWORD
         }
       ],
-      "cpu": 256,
-      "memory": 512
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/${var.APP_NAME}"
+          awslogs-region        = "ap-northeast-2"
+          awslogs-stream-prefix = each.key
+        }
+      }
     }
-  ]
-  DEFINITION
+  ])
 
   tags = {
     Name        = "${var.APP_NAME}-${each.key}-task"
