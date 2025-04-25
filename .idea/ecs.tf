@@ -173,6 +173,11 @@ resource "aws_ecs_service" "msa_service" {
     security_groups = [aws_security_group.ecs_sg.id]
     assign_public_ip = false
   }
+
+  service_registries {
+    registry_arn   = aws_service_discovery_service.services[each.key].arn
+    container_name = "${var.APP_NAME}-${var.Environment}-${each.key}-container"
+  }
 }
 
 // redis
