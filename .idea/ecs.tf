@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.28"
+          value = "10.0.11.158"
         }
       ],
       logConfiguration = {
@@ -122,7 +122,7 @@ resource "aws_ecs_task_definition" "msa_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.28"
+          value = "10.0.11.158"
         },
         {
           name  = "RDS_URL"
@@ -223,6 +223,37 @@ resource "aws_ecs_service" "redis_service" {
     subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
     security_groups = [aws_security_group.redis_sg.id]
     assign_public_ip = false
+  }
+}
+
+# 오토스케일링 타겟 (서비스별로 하나씩)
+resource "aws_appautoscaling_target" "msa_scaling_target" {
+  for_each = toset(var.msa_services)
+
+  max_capacity       = 5
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.cluster.name}/${aws_ecs_service.msa_service[each.key].name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+# 오토스케일링 정책 (서비스별로 하나씩)
+resource "aws_appautoscaling_policy" "msa_cpu_scaling_policy" {
+  for_each = toset(var.msa_services)
+
+  name               = "${each.key}-cpu-scaling-policy"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.msa_scaling_target[each.key].resource_id
+  scalable_dimension = aws_appautoscaling_target.msa_scaling_target[each.key].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.msa_scaling_target[each.key].service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 50.0
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
   }
 }
 
