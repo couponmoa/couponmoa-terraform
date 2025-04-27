@@ -16,7 +16,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.execution_role.arn
-  task_role_arn            = aws_iam_role.execution_role.arn
+  task_role_arn            = aws_iam_role.task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -97,7 +97,7 @@ resource "aws_ecs_task_definition" "msa_task" {
   cpu                     = "256"
   memory                  = "512"
   execution_role_arn      = aws_iam_role.execution_role.arn
-  task_role_arn           = aws_iam_role.execution_role.arn
+  task_role_arn           = aws_iam_role.task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -201,7 +201,7 @@ resource "aws_ecs_task_definition" "redis_task" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.execution_role.arn
-  task_role_arn            = aws_iam_role.execution_role.arn
+  task_role_arn            = aws_iam_role.task_role.arn
 
   container_definitions = jsonencode([
     {
