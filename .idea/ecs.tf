@@ -106,9 +106,22 @@ resource "aws_ecs_task_definition" "msa_task" {
       essential = true
       cpu       = 256
       memory    = 512
+      # portMappings = [
+      #   {
+      #     containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+      #
+      #   }
+      # ]
       portMappings = [
         {
           containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+          hostPort      = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+          protocol      = "tcp"
+        },
+        {
+          containerPort = 6565
+          hostPort      = 6565
+          protocol      = "tcp"
         }
       ]
       environment = [
