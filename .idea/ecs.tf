@@ -239,9 +239,13 @@ resource "aws_ecs_service" "msa_service" {
 #   }
 # }
 
-# 오토스케일링 타겟 (서비스별로 하나씩)
+locals {
+  scalable_services = [for svc in var.msa_services : svc if !(svc == "notification" || svc == "scheduling")]
+}
+
+# 오토스케일링 타겟 (user, store, coupon만)
 resource "aws_appautoscaling_target" "msa_scaling_target" {
-  for_each = toset(var.msa_services)
+  for_each = toset(local.scalable_services)
 
   max_capacity       = 5
   min_capacity       = 1
@@ -250,9 +254,9 @@ resource "aws_appautoscaling_target" "msa_scaling_target" {
   service_namespace  = "ecs"
 }
 
-# 오토스케일링 정책 (서비스별로 하나씩)
+# 오토스케일링 정책 (user, store, coupon만)
 resource "aws_appautoscaling_policy" "msa_cpu_scaling_policy" {
-  for_each = toset(var.msa_services)
+  for_each = toset(local.scalable_services)
 
   name               = "${each.key}-cpu-scaling-policy"
   policy_type        = "TargetTrackingScaling"
