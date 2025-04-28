@@ -9,25 +9,6 @@ resource "aws_iam_role" "execution_role" {
   }
 }
 
-# SQS 전송 권한
-resource "aws_iam_policy" "sqs_access" {
-  name = "${var.APP_NAME}-${var.Environment}-sqs-access"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect   = "Allow",
-      Action   = [
-        "sqs:SendMessage",        # 메시지 전송 (모든 서버 필요)
-        "sqs:ReceiveMessage",     # 메시지 수신
-        "sqs:DeleteMessage",      # 수신 후 삭제
-        "sqs:GetQueueAttributes"  # 큐 속성 조회 (수신 쪽에서 주로 필요)
-      ],
-      Resource = "*"  # 또는 특정 SQS ARN으로 제한 가능
-    }]
-  })
-}
-
 # RDS 권한 (보통 연결만 하므로 EC2 권한으로 처리)
 resource "aws_iam_policy" "rds_access" {
   name = "${var.APP_NAME}-${var.Environment}-rds-access"
@@ -85,7 +66,7 @@ resource "aws_iam_policy" "s3_user_profile_access" {
 # IAM ROLE에 SQS 정책 추가
 resource "aws_iam_role_policy_attachment" "attach_sqs_policy" {
   role       = aws_iam_role.execution_role.name
-  policy_arn = aws_iam_policy.sqs_access.arn
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
 }
 
 # IAM ROLE에 RDS 정책 추가
