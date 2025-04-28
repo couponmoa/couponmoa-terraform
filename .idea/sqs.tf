@@ -6,7 +6,7 @@ resource "aws_sqs_queue" "coupon_create_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount = 10
+    maxReceiveCount     = 10
   })
 
   tags = {
@@ -23,7 +23,7 @@ resource "aws_sqs_queue" "coupon_issue_v1_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount = 10
+    maxReceiveCount     = 10
   })
 
   tags = {
@@ -40,7 +40,7 @@ resource "aws_sqs_queue" "coupon_issue_v2_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount = 10
+    maxReceiveCount     = 10
   })
 
   tags = {
@@ -57,7 +57,7 @@ resource "aws_sqs_queue" "coupon_expire_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount = 10
+    maxReceiveCount     = 10
   })
 
   tags = {
@@ -74,7 +74,7 @@ resource "aws_sqs_queue" "coupon_use_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount = 10
+    maxReceiveCount     = 10
   })
 
   tags = {
@@ -88,17 +88,6 @@ resource "aws_sqs_queue" "dead_letter_queue" {
 
   visibility_timeout_seconds = 30
   message_retention_seconds  = 1209600
-
-  redrive_allow_policy = jsonencode({
-    redrivePermission = "byQueue",
-    sourceQueueArns = [
-      aws_sqs_queue.coupon_create_queue.arn,
-      aws_sqs_queue.coupon_expire_queue.arn,
-      aws_sqs_queue.coupon_issue_v1_queue.arn,
-      aws_sqs_queue.coupon_issue_v2_queue.arn,
-      aws_sqs_queue.coupon_use_queue.arn
-    ]
-  })
 
   tags = {
     Name        = "dead-letter-queue"
