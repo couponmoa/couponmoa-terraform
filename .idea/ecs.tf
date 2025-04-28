@@ -269,4 +269,3 @@ resource "aws_appautoscaling_policy" "msa_cpu_scaling_policy" {
     scale_out_cooldown = 60
   }
 }
-
