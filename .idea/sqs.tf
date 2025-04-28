@@ -89,6 +89,15 @@ resource "aws_sqs_queue" "dead_letter_queue" {
   visibility_timeout_seconds = 30
   message_retention_seconds  = 1209600
 
+  tags = {
+    Name        = "dead-letter-queue"
+    Environment = var.Environment
+  }
+}
+
+resource "aws_sqs_queue_redrive_allow_policy" "couponmoa_queue_redrive_allow_policy" {
+  queue_url = aws_sqs_queue.dead_letter_queue.id
+
   redrive_allow_policy = jsonencode({
     redrivePermission = "byQueue",
     sourceQueueArns = [
@@ -100,8 +109,4 @@ resource "aws_sqs_queue" "dead_letter_queue" {
     ]
   })
 
-  tags = {
-    Name        = "dead-letter-queue"
-    Environment = var.Environment
-  }
 }
