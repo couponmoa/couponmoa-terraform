@@ -53,3 +53,14 @@ output "sqs_queue_urls" {
     coupon_alert = aws_sqs_queue.coupon_alert_queue.url
   }
 }
+
+# Elasticache Redis 엔드포인트 출력
+output "elasticache_redis_endpoint" {
+  description = "Elasticache Redis primary endpoint"
+  value       = aws_elasticache_cluster.redis.cache_nodes[0].address
+}
+
+output "elasticache_redis_port" {
+  description = "Elasticache Redis port"
+  value       = aws_elasticache_cluster.redis.cache_nodes[0].port
+}

@@ -194,50 +194,50 @@ resource "aws_ecs_service" "msa_service" {
 }
 
 // redis
-resource "aws_ecs_task_definition" "redis_task" {
-  family                   = "${var.APP_NAME}-${var.Environment}-redis"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = aws_iam_role.execution_role.arn
-  task_role_arn            = aws_iam_role.execution_role.arn
-
-  container_definitions = jsonencode([
-    {
-      name         = "${var.APP_NAME}-${var.Environment}-redis-container"
-      image        = "redis:7.2"  # 최신 버전으로 사용
-      essential    = true
-      portMappings = [
-        {
-          containerPort = 6379
-        }
-      ]
-      memory = 512
-      cpu    = 256
-    }
-  ])
-
-  tags = {
-    Name        = "${var.APP_NAME}-redis-task"
-    Environment = var.Environment
-  }
-}
-
-resource "aws_ecs_service" "redis_service" {
-  name                = "${var.APP_NAME}-${var.Environment}-redis-service"
-  cluster             = aws_ecs_cluster.cluster.id
-  task_definition     = aws_ecs_task_definition.redis_task.arn
-  launch_type         = "FARGATE"
-  desired_count       = 1
-  scheduling_strategy = "REPLICA"
-
-  network_configuration {
-    subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-    security_groups = [aws_security_group.redis_sg.id]
-    assign_public_ip = false
-  }
-}
+# resource "aws_ecs_task_definition" "redis_task" {
+#   family                   = "${var.APP_NAME}-${var.Environment}-redis"
+#   requires_compatibilities = ["FARGATE"]
+#   network_mode             = "awsvpc"
+#   cpu                      = "256"
+#   memory                   = "512"
+#   execution_role_arn       = aws_iam_role.execution_role.arn
+#   task_role_arn            = aws_iam_role.execution_role.arn
+#
+#   container_definitions = jsonencode([
+#     {
+#       name         = "${var.APP_NAME}-${var.Environment}-redis-container"
+#       image        = "redis:7.2"  # 최신 버전으로 사용
+#       essential    = true
+#       portMappings = [
+#         {
+#           containerPort = 6379
+#         }
+#       ]
+#       memory = 512
+#       cpu    = 256
+#     }
+#   ])
+#
+#   tags = {
+#     Name        = "${var.APP_NAME}-redis-task"
+#     Environment = var.Environment
+#   }
+# }
+#
+# resource "aws_ecs_service" "redis_service" {
+#   name                = "${var.APP_NAME}-${var.Environment}-redis-service"
+#   cluster             = aws_ecs_cluster.cluster.id
+#   task_definition     = aws_ecs_task_definition.redis_task.arn
+#   launch_type         = "FARGATE"
+#   desired_count       = 1
+#   scheduling_strategy = "REPLICA"
+#
+#   network_configuration {
+#     subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+#     security_groups = [aws_security_group.redis_sg.id]
+#     assign_public_ip = false
+#   }
+# }
 
 # 오토스케일링 타겟 (서비스별로 하나씩)
 resource "aws_appautoscaling_target" "msa_scaling_target" {
