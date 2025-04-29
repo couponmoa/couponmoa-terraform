@@ -148,6 +148,14 @@ resource "aws_ecs_task_definition" "msa_task" {
         {
           name  = "RDS_PASSWORD"
           value = var.DB_PASSWORD
+        },
+        {
+          name  = "SMTP_USERNAME"
+          value = var.SMTP_USERNAME
+        },
+        {
+          name  = "SMTP_PASSWORD"
+          value = var.SMTP_PASSWORD
         }
       ],
       logConfiguration = {
