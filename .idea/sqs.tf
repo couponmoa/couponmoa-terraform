@@ -6,7 +6,7 @@ resource "aws_sqs_queue" "coupon_create_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount     = 10
+    maxReceiveCount = 10
   })
 
   tags = {
@@ -23,7 +23,7 @@ resource "aws_sqs_queue" "coupon_issue_v1_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount     = 10
+    maxReceiveCount = 10
   })
 
   tags = {
@@ -40,7 +40,7 @@ resource "aws_sqs_queue" "coupon_issue_v2_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount     = 10
+    maxReceiveCount = 10
   })
 
   tags = {
@@ -57,7 +57,7 @@ resource "aws_sqs_queue" "coupon_expire_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount     = 10
+    maxReceiveCount = 10
   })
 
   tags = {
@@ -74,7 +74,7 @@ resource "aws_sqs_queue" "coupon_use_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead_letter_queue.arn
-    maxReceiveCount     = 10
+    maxReceiveCount = 10
   })
 
   tags = {
@@ -93,4 +93,20 @@ resource "aws_sqs_queue" "dead_letter_queue" {
     Name        = "dead-letter-queue"
     Environment = var.Environment
   }
+}
+
+resource "aws_sqs_queue_redrive_allow_policy" "couponmoa_queue_redrive_allow_policy" {
+  queue_url = aws_sqs_queue.dead_letter_queue.id
+
+  redrive_allow_policy = jsonencode({
+    redrivePermission = "byQueue",
+    sourceQueueArns = [
+      aws_sqs_queue.coupon_create_queue.arn,
+      aws_sqs_queue.coupon_expire_queue.arn,
+      aws_sqs_queue.coupon_issue_v1_queue.arn,
+      aws_sqs_queue.coupon_issue_v2_queue.arn,
+      aws_sqs_queue.coupon_use_queue.arn
+    ]
+  })
+
 }

@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.158"
+          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
         }
       ],
       logConfiguration = {
@@ -135,7 +135,7 @@ resource "aws_ecs_task_definition" "msa_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.158"
+          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
         },
         {
           name  = "RDS_URL"

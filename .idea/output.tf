@@ -47,12 +47,12 @@ output "cloudfront_domain_name" {
 }
 
 # sqs queue url
-output "sqs_queue_urls" {
-  value = {
-    email_alert  = aws_sqs_queue.email_alert_queue.url
-    coupon_alert = aws_sqs_queue.coupon_alert_queue.url
-  }
-}
+# output "sqs_queue_urls" {
+#   value = {
+#     email_alert  = aws_sqs_queue.email_alert_queue.url
+#     coupon_alert = aws_sqs_queue.coupon_alert_queue.url
+#   }
+# }
 
 # Elasticache Redis 엔드포인트 출력
 output "elasticache_redis_endpoint" {
