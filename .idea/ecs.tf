@@ -175,7 +175,7 @@ resource "aws_ecs_task_definition" "msa_task" {
 // ADOT Collector 사이드카 컨테이너 정의 추가 ( 각서버의 log, metric 수집해서 AMP로 보내는 역할)
  {
       "name": "adot-collector",                            
-      "image": "amazon/aws-otel-collector:latest",       
+      "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함. 
       "essential": true,                                  
       "cpu": 256,                                        
       "memory": 512,                                     
