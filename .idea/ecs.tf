@@ -94,10 +94,11 @@ resource "aws_ecs_task_definition" "msa_task" {
   family                  = "${var.APP_NAME}-${each.key}"
   requires_compatibilities = ["FARGATE"]
   network_mode            = "awsvpc"
-  cpu                     = "512"
-  memory                  = "1024"
-  execution_role_arn      = aws_iam_role.execution_role.arn
-  task_role_arn           = aws_iam_role.execution_role.arn
+  cpu                    = var.enable_monitoring_sidecar ? "512" : "256" # 모니터링 활성화 시 512, 비활성화 시 256
+  memory                 = var.enable_monitoring_sidecar ? "1024" : "512" # 모니터링 활성화 시 1024, 비활성화 시 512
+  execution_role_arn     = aws_iam_role.execution_role.arn
+  task_role_arn          = aws_iam_role.execution_role.arn 
+
 
   container_definitions = jsonencode([
     {
@@ -172,7 +173,10 @@ resource "aws_ecs_task_definition" "msa_task" {
         }
       }
     },
+]
 // ADOT Collector 사이드카 컨테이너 정의 추가 ( 각서버의 log, metric 수집해서 AMP로 보내는 역할)
+// enable_monitoring_sidecar 변수가 true일 때만 ADOT Collector 컨테이너 정의를 배열에 추가
+++ (var.enable_monitoring_sidecar ? [
  {
       "name": "adot-collector",                            
       "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함. 
@@ -199,7 +203,8 @@ resource "aws_ecs_task_definition" "msa_task" {
          }
        }
     }
-  ])
+    ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
+  )
 
   tags = {
     Name        = "${var.APP_NAME}-${each.key}-task"
