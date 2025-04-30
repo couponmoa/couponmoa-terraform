@@ -94,8 +94,8 @@ resource "aws_ecs_task_definition" "msa_task" {
   family                  = "${var.APP_NAME}-${each.key}"
   requires_compatibilities = ["FARGATE"]
   network_mode            = "awsvpc"
-  cpu                     = "256"
-  memory                  = "512"
+  cpu                     = "512"
+  memory                  = "1024"
   execution_role_arn      = aws_iam_role.execution_role.arn
   task_role_arn           = aws_iam_role.execution_role.arn
 
@@ -121,6 +121,11 @@ resource "aws_ecs_task_definition" "msa_task" {
         {
           containerPort = 6565
           hostPort      = 6565
+          protocol      = "tcp"
+        },
+        {
+          containerPort = 9090
+          hostPort      = 9090
           protocol      = "tcp"
         }
       ]
@@ -166,6 +171,33 @@ resource "aws_ecs_task_definition" "msa_task" {
           awslogs-stream-prefix = each.key
         }
       }
+    },
+// ADOT Collector 사이드카 컨테이너 정의 추가 ( 각서버의 log, metric 수집해서 AMP로 보내는 역할)
+ {
+      "name": "adot-collector",                            
+      "image": "amazon/aws-otel-collector:latest",       
+      "essential": true,                                  
+      "cpu": 256,                                        
+      "memory": 512,                                     
+      "command": ["--config=/etc/otel/config.yaml"],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": var.AWS_REGION                         
+        },
+        {
+          "name": "AMP_REMOTE_WRITE_URL",
+          "value": "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/remote_write"
+        }
+      ],
+      "logConfiguration": {
+         "logDriver": "awslogs",
+         "options": {
+           "awslogs-group": "/ecs/${var.APP_NAME}",
+           "awslogs-region": var.AWS_REGION,
+           "awslogs-stream-prefix": "${each.key}-adot" 
+         }
+       }
     }
   ])
 
