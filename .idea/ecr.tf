@@ -17,3 +17,12 @@ resource "aws_ecr_repository" "msa_repos" {
     Environment = var.Environment
   }
 }
+
+resource "aws_ecr_repository" "ai" {
+  name = "${var.APP_NAME}-${var.Environment}-ai-ecr"
+
+  tags = {
+    Name        = "${var.APP_NAME}-ai-ecr"
+    Environment = var.Environment
+  }
+}

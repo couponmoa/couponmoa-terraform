@@ -36,6 +36,12 @@ output "msa_service_ids" {
   }
 }
 
+# ai service dns
+output "ai_service_discovery_dns" {
+  value = "${aws_service_discovery_service.ai.name}.${aws_service_discovery_private_dns_namespace.namespace.name}"
+  description = "ai-server의 Cloud Map 내부 DNS 주소"
+}
+
 # s3 버킷 이름
 output "s3_bucket_name" {
   value = aws_s3_bucket.image_bucket.id
