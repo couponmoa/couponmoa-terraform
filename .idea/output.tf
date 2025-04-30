@@ -70,3 +70,14 @@ output "elasticache_redis_port" {
   description = "Elasticache Redis port"
   value       = aws_elasticache_cluster.redis.cache_nodes[0].port
 }
+
+# Aws Prometheus 엔드포인트 출력
+output "amp_remote_write_url" {
+  description = "AMP remote write endpoint URL"
+  value       = "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/remote_write"
+}
+
+output "amp_query_url" {
+  description = "AMP query endpoint URL (for Grafana)"
+  value       = "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/query"
+}
