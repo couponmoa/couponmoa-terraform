@@ -1,0 +1,21 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'couponmoa-app-scrape'
+          scrape_interval: 600s 
+          static_configs:
+            - targets: [ 'localhost:9090/actuator/prometheus' ]
+            
+exporters:
+  awsprometheusremotewrite:
+  endpoint: "${AMP_REMOTE_WRITE_URL}"
+    aws_auth:
+      region: "${var.AWS_REGION}" 
+      service: "aps"              
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [awsprometheusremotewrite]
