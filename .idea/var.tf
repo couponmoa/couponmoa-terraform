@@ -23,3 +23,4 @@ variable "jwt_secret_key" {}
 variable "rds_url" {}
 variable "SMTP_USERNAME" {}
 variable "SMTP_PASSWORD" {}
+variable "google_api_key" {}
