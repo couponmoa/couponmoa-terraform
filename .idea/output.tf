@@ -70,3 +70,9 @@ output "elasticache_redis_port" {
   description = "Elasticache Redis port"
   value       = aws_elasticache_cluster.redis.cache_nodes[0].port
 }
+
+# ElasticSearch private ip
+output "elasticsearch_private_ip" {
+  description = "Private IP of the Elasticsearch instance"
+  value       = aws_instance.elasticsearch.private_ip
+}
