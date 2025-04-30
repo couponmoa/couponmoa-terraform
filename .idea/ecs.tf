@@ -272,6 +272,16 @@ resource "aws_ecs_service" "ai_service" {
   }
 }
 
+resource "aws_prometheus_workspace" "couponmoa_amp" {
+  alias = "couponmoa-workspace-${var.Environment}" 
+
+  tags = {
+    Name        = "${var.APP_NAME}-amp-workspace"
+    Environment = var.Environment
+    Project     = "CouponMoa"
+  }
+}
+
 locals {
   scalable_services = [for svc in var.msa_services : svc if !(svc == "notification" || svc == "scheduling" || svc == "ai")]
 }
