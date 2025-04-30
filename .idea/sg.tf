@@ -119,3 +119,29 @@ resource "aws_security_group" "redis_sg" {
     Environment = var.Environment
   }
 }
+
+// elasticsearch
+resource "aws_security_group" "elasticsearch_sg" {
+  name        = "elasticsearch-sg"
+  description = "Allow internal access to Elasticsearch"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    description = "Allow from inside VPC"
+    from_port   = 9200
+    to_port     = 9200
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "elasticsearch-sg"
+  }
+}

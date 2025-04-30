@@ -13,6 +13,9 @@ variable "Environment" {
   default = "dev"
 }
 
+variable ubuntu_ami_id {}
+
+
 variable "msa_services" {
   default = ["user", "store", "coupon", "notification", "scheduling"]
 }
@@ -43,3 +46,5 @@ variable "rds_url" {}
 variable "SMTP_USERNAME" {}
 variable "SMTP_PASSWORD" {}
 variable "google_api_key" {}
+variable "key_name" {}
+
