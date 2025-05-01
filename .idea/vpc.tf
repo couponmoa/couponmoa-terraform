@@ -90,9 +90,40 @@ resource "aws_route_table_association" "public_route_table_association_2" {
   route_table_id = aws_route_table.public_route_table.id
 }
 
-# 프라이빗 라우트 테이블 (NAT 없이 기본 설정)
+# NAT Gateway용 EIP
+resource "aws_eip" "nat_eip" {
+  vpc        = true
+  depends_on = [aws_internet_gateway.igw]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name        = "${var.APP_NAME}-nat-eip"
+    Environment = var.Environment
+  }
+}
+
+# NAT Gateway
+resource "aws_nat_gateway" "nat" {
+  subnet_id     = aws_subnet.public_subnet_1.id
+  allocation_id = aws_eip.nat_eip.id
+
+  tags = {
+    Name        = "${var.APP_NAME}-nat-gateway"
+    Environment = var.Environment
+  }
+}
+
+# 프라이빗 라우트 테이블 + 연결
 resource "aws_route_table" "private_route_table" {
   vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
 
   tags = {
     Name        = "${var.APP_NAME}-private-rt"
@@ -108,42 +139,4 @@ resource "aws_route_table_association" "private_route_table_association_1" {
 resource "aws_route_table_association" "private_route_table_association_2" {
   subnet_id      = aws_subnet.private_subnet_2.id
   route_table_id = aws_route_table.private_route_table.id
-}
-
-# VPC Endpoint: S3
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = aws_vpc.vpc.id
-  service_name      = "com.amazonaws.${var.AWS_REGION}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = [aws_route_table.private_route_table.id]
-}
-
-# VPC Endpoint: SQS
-resource "aws_vpc_endpoint" "sqs" {
-  vpc_id             = aws_vpc.vpc.id
-  service_name       = "com.amazonaws.${var.AWS_REGION}.sqs"
-  vpc_endpoint_type  = "Interface"
-  subnet_ids         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-  security_group_ids = [aws_security_group.endpoint_sg.id]
-  private_dns_enabled = true
-}
-
-# VPC Endpoint: ECR API (Interface)
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id             = aws_vpc.vpc.id
-  service_name       = "com.amazonaws.${var.AWS_REGION}.ecr.api"
-  vpc_endpoint_type  = "Interface"
-  subnet_ids         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-  security_group_ids = [aws_security_group.endpoint_sg.id]
-  private_dns_enabled = true
-}
-
-# VPC Endpoint: ECR DKR (Interface)
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id             = aws_vpc.vpc.id
-  service_name       = "com.amazonaws.${var.AWS_REGION}.ecr.dkr"
-  vpc_endpoint_type  = "Interface"
-  subnet_ids         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-  security_group_ids = [aws_security_group.endpoint_sg.id]
-  private_dns_enabled = true
 }

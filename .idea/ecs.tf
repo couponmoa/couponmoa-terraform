@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
+          value = "10.0.11.158"
         }
       ],
       logConfiguration = {
@@ -97,112 +97,114 @@ resource "aws_ecs_task_definition" "msa_task" {
   cpu                    = var.enable_monitoring_sidecar ? "512" : "256" # 모니터링 활성화 시 512, 비활성화 시 256
   memory                 = var.enable_monitoring_sidecar ? "1024" : "512" # 모니터링 활성화 시 1024, 비활성화 시 512
   execution_role_arn     = aws_iam_role.execution_role.arn
-  task_role_arn          = aws_iam_role.execution_role.arn 
+  task_role_arn          = aws_iam_role.execution_role.arn
 
 
-  container_definitions = jsonencode([
-    {
-      name      = "${var.APP_NAME}-${var.Environment}-${each.key}-container"
-      image     = "${aws_ecr_repository.msa_repos[each.key].repository_url}:latest"
-      essential = true
-      cpu       = 256
-      memory    = 512
-      # portMappings = [
-      #   {
-      #     containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
-      #
-      #   }
-      # ]
-      portMappings = [
-        {
-          containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
-          hostPort      = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 6565
-          hostPort      = 6565
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 9090
-          hostPort      = 9090
-          protocol      = "tcp"
+  container_definitions = jsonencode(concat(
+    [
+      {
+        name      = "${var.APP_NAME}-${var.Environment}-${each.key}-container"
+        image     = "${aws_ecr_repository.msa_repos[each.key].repository_url}:latest"
+        essential = true
+        cpu       = 256
+        memory    = 512
+        # portMappings = [
+        #   {
+        #     containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+        #
+        #   }
+        # ]
+        portMappings = [
+          {
+            containerPort = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+            hostPort      = lookup({ user = 8081, store = 8082, coupon = 8083, notification = 8084, scheduling = 8085 }, each.key)
+            protocol      = "tcp"
+          },
+          {
+            containerPort = 6565
+            hostPort      = 6565
+            protocol      = "tcp"
+          },
+          {
+            containerPort = 9090
+            hostPort      = 9090
+            protocol      = "tcp"
+          }
+        ]
+        environment = [
+          {
+            name  = "SPRING_PROFILES_ACTIVE"
+            value = "prod"
+          },
+          {
+            name  = "JWT_SECRET_KEY"
+            value = var.jwt_secret_key
+          },
+          {
+            name  = "REDIS_HOST"
+            value = "10.0.11.158"
+          },
+          {
+            name  = "RDS_URL"
+            value = var.rds_url
+          },
+          {
+            name  = "RDS_USERNAME"
+            value = var.DB_USER
+          },
+          {
+            name  = "RDS_PASSWORD"
+            value = var.DB_PASSWORD
+          },
+          {
+            name  = "SMTP_USERNAME"
+            value = var.SMTP_USERNAME
+          },
+          {
+            name  = "SMTP_PASSWORD"
+            value = var.SMTP_PASSWORD
+          }
+        ],
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = "/ecs/${var.APP_NAME}"
+            awslogs-region        = "ap-northeast-2"
+            awslogs-stream-prefix = each.key
+          }
         }
-      ]
-      environment = [
-        {
-          name  = "SPRING_PROFILES_ACTIVE"
-          value = "prod"
-        },
-        {
-          name  = "JWT_SECRET_KEY"
-          value = var.jwt_secret_key
-        },
-        {
-          name  = "REDIS_HOST"
-          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
-        },
-        {
-          name  = "RDS_URL"
-          value = var.rds_url
-        },
-        {
-          name  = "RDS_USERNAME"
-          value = var.DB_USER
-        },
-        {
-          name  = "RDS_PASSWORD"
-          value = var.DB_PASSWORD
-        },
-        {
-          name  = "SMTP_USERNAME"
-          value = var.SMTP_USERNAME
-        },
-        {
-          name  = "SMTP_PASSWORD"
-          value = var.SMTP_PASSWORD
-        }
-      ],
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "/ecs/${var.APP_NAME}"
-          awslogs-region        = "ap-northeast-2"
-          awslogs-stream-prefix = each.key
+      },
+    ],
+
+    // ADOT Collector 사이드카 컨테이너 정의 추가 ( 각서버의 log, metric 수집해서 AMP로 보내는 역할)
+    // enable_monitoring_sidecar 변수가 true일 때만 ADOT Collector 컨테이너 정의를 배열에 추가
+      var.enable_monitoring_sidecar ? [
+      {
+        "name": "adot-collector",
+        "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함.
+        "essential": true,
+        "cpu": 256,
+        "memory": 512,
+        "command": ["--config=/etc/otel/config.yaml"],
+        "environment": [
+          {
+            "name": "AWS_REGION",
+            "value": var.AWS_REGION
+          },
+          {
+            "name": "AMP_REMOTE_WRITE_URL",
+            "value": "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/remote_write"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/${var.APP_NAME}",
+            "awslogs-region": var.AWS_REGION,
+            "awslogs-stream-prefix": "${each.key}-adot"
+          }
         }
       }
-    },
-]
-// ADOT Collector 사이드카 컨테이너 정의 추가 ( 각서버의 log, metric 수집해서 AMP로 보내는 역할)
-// enable_monitoring_sidecar 변수가 true일 때만 ADOT Collector 컨테이너 정의를 배열에 추가
-++ (var.enable_monitoring_sidecar ? [
- {
-      "name": "adot-collector",                            
-      "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함. 
-      "essential": true,                                  
-      "cpu": 256,                                        
-      "memory": 512,                                     
-      "command": ["--config=/etc/otel/config.yaml"],
-      "environment": [
-        {
-          "name": "AWS_REGION",
-          "value": var.AWS_REGION                         
-        },
-        {
-          "name": "AMP_REMOTE_WRITE_URL",
-          "value": "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/remote_write"
-        }
-      ],
-      "logConfiguration": {
-         "logDriver": "awslogs",
-         "options": {
-           "awslogs-group": "/ecs/${var.APP_NAME}",
-           "awslogs-region": var.AWS_REGION,
-           "awslogs-stream-prefix": "${each.key}-adot" 
-         }
-       }
-    }
     ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
   )
 
@@ -310,7 +312,7 @@ resource "aws_ecs_service" "ai_service" {
 }
 
 resource "aws_prometheus_workspace" "couponmoa_amp" {
-  alias = "couponmoa-workspace-${var.Environment}" 
+  alias = "couponmoa-workspace-${var.Environment}"
 
   tags = {
     Name        = "${var.APP_NAME}-amp-workspace"
@@ -353,4 +355,3 @@ resource "aws_appautoscaling_policy" "msa_cpu_scaling_policy" {
     scale_out_cooldown = 60
   }
 }
-
