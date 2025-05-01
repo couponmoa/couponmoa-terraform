@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.158"
+          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
         }
       ],
       logConfiguration = {
@@ -206,7 +206,8 @@ resource "aws_ecs_task_definition" "msa_task" {
         }
       }
     ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
-  )
+
+  ))
 
   tags = {
     Name        = "${var.APP_NAME}-${each.key}-task"
@@ -253,7 +254,7 @@ resource "aws_ecs_task_definition" "ai_task" {
   container_definitions = jsonencode([
     {
       name      = "${var.APP_NAME}-${var.Environment}-ai-container",
-      image = "${aws_ecr_repository.ai.repository_url}:latest"
+      image = "${aws_ecr_repository.ai.repository_url}:latest",
       essential = true,
       cpu       = 256,
       memory    = 512,
