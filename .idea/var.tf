@@ -20,6 +20,8 @@ variable "msa_services" {
   default = ["user", "store", "coupon", "notification", "scheduling"]
 }
 
+endpoint_sg_id = aws_security_group.endpoint_sg.id
+
 variable "DB_USER" {}
 variable "DB_PASSWORD" {}
 variable "jwt_secret_key" {}

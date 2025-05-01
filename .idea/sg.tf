@@ -145,3 +145,28 @@ resource "aws_security_group" "elasticsearch_sg" {
     Name = "elasticsearch-sg"
   }
 }
+
+resource "aws_security_group" "endpoint_sg" {
+  name        = "${var.APP_NAME}-endpoint-sg"
+  description = "Allow HTTPS access to VPC Interface Endpoints"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] # VPC CIDR 또는 ECS 보안 그룹 ID로 제한 가능
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.APP_NAME}-endpoint-sg"
+    Environment = var.Environment
+  }
+}
