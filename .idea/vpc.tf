@@ -124,7 +124,7 @@ resource "aws_vpc_endpoint" "sqs" {
   service_name       = "com.amazonaws.${var.AWS_REGION}.sqs"
   vpc_endpoint_type  = "Interface"
   subnet_ids         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-  security_group_ids = [var.endpoint_sg_id]
+  security_group_ids = [aws_security_group.endpoint_sg.id]
   private_dns_enabled = true
 }
 
@@ -134,7 +134,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
   service_name       = "com.amazonaws.${var.AWS_REGION}.ecr.api"
   vpc_endpoint_type  = "Interface"
   subnet_ids         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-  security_group_ids = [var.endpoint_sg_id]
+  security_group_ids = [aws_security_group.endpoint_sg.id]
   private_dns_enabled = true
 }
 
@@ -144,6 +144,6 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   service_name       = "com.amazonaws.${var.AWS_REGION}.ecr.dkr"
   vpc_endpoint_type  = "Interface"
   subnet_ids         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-  security_group_ids = [var.endpoint_sg_id]
+  security_group_ids = [aws_security_group.endpoint_sg.id]
   private_dns_enabled = true
 }
