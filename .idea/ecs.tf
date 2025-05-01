@@ -205,8 +205,7 @@ var.enable_monitoring_sidecar ? [
          }
        }
     }
-    ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
-
+    ] : [] # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
   ))
 
   tags = {
