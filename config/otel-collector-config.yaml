@@ -9,9 +9,9 @@ receivers:
             
 exporters:
   awsprometheusremotewrite:
-  endpoint: "${AMP_REMOTE_WRITE_URL}"
+endpoint: "${env:AMP_REMOTE_WRITE_URL}"
     aws_auth:
-      region: "${var.AWS_REGION}" 
+     region: "${env:AWS_REGION}"
       service: "aps"              
 
 service:
