@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.158"
+          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
         }
       ],
       logConfiguration = {
@@ -94,12 +94,14 @@ resource "aws_ecs_task_definition" "msa_task" {
   family                  = "${var.APP_NAME}-${each.key}"
   requires_compatibilities = ["FARGATE"]
   network_mode            = "awsvpc"
-  cpu                     = "256"
-  memory                  = "512"
-  execution_role_arn      = aws_iam_role.execution_role.arn
-  task_role_arn           = aws_iam_role.execution_role.arn
+  cpu                    = var.enable_monitoring_sidecar ? "512" : "256" # 모니터링 활성화 시 512, 비활성화 시 256
+  memory                 = var.enable_monitoring_sidecar ? "1024" : "512" # 모니터링 활성화 시 1024, 비활성화 시 512
+  execution_role_arn     = aws_iam_role.execution_role.arn
+  task_role_arn          = aws_iam_role.execution_role.arn
 
-  container_definitions = jsonencode([
+
+  container_definitions = jsonencode(concat(
+[
     {
       name      = "${var.APP_NAME}-${var.Environment}-${each.key}-container"
       image     = "${aws_ecr_repository.msa_repos[each.key].repository_url}:latest"
@@ -121,6 +123,11 @@ resource "aws_ecs_task_definition" "msa_task" {
         {
           containerPort = 6565
           hostPort      = 6565
+          protocol      = "tcp"
+        },
+        {
+          containerPort = 9090
+          hostPort      = 9090
           protocol      = "tcp"
         }
       ]
@@ -166,8 +173,41 @@ resource "aws_ecs_task_definition" "msa_task" {
           awslogs-stream-prefix = each.key
         }
       }
+    },
+],
+
+// ADOT Collector 사이드카 컨테이너 정의 추가 ( 각서버의 log, metric 수집해서 AMP로 보내는 역할)
+// enable_monitoring_sidecar 변수가 true일 때만 ADOT Collector 컨테이너 정의를 배열에 추가
+var.enable_monitoring_sidecar ? [
+ {
+      "name": "adot-collector",
+      "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함.
+      "essential": true,
+      "cpu": 256,
+      "memory": 512,
+      "command": ["--config=/etc/otel/config.yaml"],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": var.AWS_REGION
+        },
+        {
+          "name": "AMP_REMOTE_WRITE_URL",
+          "value": "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/remote_write"
+        }
+      ],
+      "logConfiguration": {
+         "logDriver": "awslogs",
+         "options": {
+           "awslogs-group": "/ecs/${var.APP_NAME}",
+           "awslogs-region": var.AWS_REGION,
+           "awslogs-stream-prefix": "${each.key}-adot"
+         }
+       }
     }
-  ])
+    ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
+
+  ))
 
   tags = {
     Name        = "${var.APP_NAME}-${each.key}-task"
@@ -214,7 +254,7 @@ resource "aws_ecs_task_definition" "ai_task" {
   container_definitions = jsonencode([
     {
       name      = "${var.APP_NAME}-${var.Environment}-ai-container",
-      image = "${aws_ecr_repository.ai.repository_url}:latest"
+      image = "${aws_ecr_repository.ai.repository_url}:latest",
       essential = true,
       cpu       = 256,
       memory    = 512,
@@ -272,6 +312,16 @@ resource "aws_ecs_service" "ai_service" {
   }
 }
 
+resource "aws_prometheus_workspace" "couponmoa_amp" {
+  alias = "couponmoa-workspace-${var.Environment}"
+
+  tags = {
+    Name        = "${var.APP_NAME}-amp-workspace"
+    Environment = var.Environment
+    Project     = "CouponMoa"
+  }
+}
+
 locals {
   scalable_services = [for svc in var.msa_services : svc if !(svc == "notification" || svc == "scheduling" || svc == "ai")]
 }
@@ -306,4 +356,3 @@ resource "aws_appautoscaling_policy" "msa_cpu_scaling_policy" {
     scale_out_cooldown = 60
   }
 }
-
