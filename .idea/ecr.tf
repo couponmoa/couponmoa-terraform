@@ -26,3 +26,12 @@ resource "aws_ecr_repository" "ai" {
     Environment = var.Environment
   }
 }
+
+resource "aws_ecr_repository" "adot_collector" {
+  name = "${var.APP_NAME}-${var.Environment}-adot-collector-ecr" 
+
+  tags = {
+    Name        = "${var.APP_NAME}-adot-collector-ecr"
+    Environment = var.Environment
+  }
+}

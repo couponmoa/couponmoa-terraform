@@ -87,6 +87,34 @@ resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
   policy_arn = aws_iam_policy.s3_user_profile_access.arn
 }
 
+# IAM ROLE에 AMP(모니터링) 정책 추가, 아마 서버에서 발생한 메트릭을 모니터링db(amp)에 저장할 수 있는 권한인듯. 
+resource "aws_iam_policy" "amp_write_policy" {
+  name        = "${var.APP_NAME}-${var.Environment}-amp-write-policy"
+  description = "Allow ECS tasks to write metrics to AMP workspace"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "aps:RemoteWrite",
+          "aps:GetSeries",
+          "aps:GetLabels",
+          "aps:GetMetricMetadata"
+        ],
+        # 생성된 AMP 워크스페이스 ARN으로 제한
+        Resource = aws_prometheus_workspace.couponmoa_amp.arn
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_amp_write_policy" {
+  role       = aws_iam_role.execution_role.name # ECS Task Role 이름 확인
+  policy_arn = aws_iam_policy.amp_write_policy.arn
+}
+
 # IAM Role 권한 허가
 # ECS Task가 IAM ROLE을 사용하도록 허용
 data "aws_iam_policy_document" "assume_role_policy" {

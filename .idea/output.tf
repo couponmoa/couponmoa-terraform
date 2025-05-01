@@ -70,9 +70,22 @@ output "elasticache_redis_port" {
   description = "Elasticache Redis port"
   value       = aws_elasticache_cluster.redis.cache_nodes[0].port
 }
-
+  
 # ElasticSearch private ip
 output "elasticsearch_private_ip" {
   description = "Private IP of the Elasticsearch instance"
   value       = aws_instance.elasticsearch.private_ip
 }
+
+# Aws Prometheus 엔드포인트 출력
+output "amp_remote_write_url" {
+  description = "AMP remote write endpoint URL"
+  value       = "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/remote_write"
+}
+
+output "amp_query_url" {
+  description = "AMP query endpoint URL (for Grafana)"
+  value       = "${aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint}api/v1/query"
+}
+
+
