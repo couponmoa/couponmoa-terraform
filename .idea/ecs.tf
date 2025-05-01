@@ -148,6 +148,14 @@ resource "aws_ecs_task_definition" "msa_task" {
         {
           name  = "RDS_PASSWORD"
           value = var.DB_PASSWORD
+        },
+        {
+          name  = "SMTP_USERNAME"
+          value = var.SMTP_USERNAME
+        },
+        {
+          name  = "SMTP_PASSWORD"
+          value = var.SMTP_PASSWORD
         }
       ],
       logConfiguration = {
@@ -193,54 +201,79 @@ resource "aws_ecs_service" "msa_service" {
   }
 }
 
-// redis
-# resource "aws_ecs_task_definition" "redis_task" {
-#   family                   = "${var.APP_NAME}-${var.Environment}-redis"
-#   requires_compatibilities = ["FARGATE"]
-#   network_mode             = "awsvpc"
-#   cpu                      = "256"
-#   memory                   = "512"
-#   execution_role_arn       = aws_iam_role.execution_role.arn
-#   task_role_arn            = aws_iam_role.execution_role.arn
-#
-#   container_definitions = jsonencode([
-#     {
-#       name         = "${var.APP_NAME}-${var.Environment}-redis-container"
-#       image        = "redis:7.2"  # 최신 버전으로 사용
-#       essential    = true
-#       portMappings = [
-#         {
-#           containerPort = 6379
-#         }
-#       ]
-#       memory = 512
-#       cpu    = 256
-#     }
-#   ])
-#
-#   tags = {
-#     Name        = "${var.APP_NAME}-redis-task"
-#     Environment = var.Environment
-#   }
-# }
-#
-# resource "aws_ecs_service" "redis_service" {
-#   name                = "${var.APP_NAME}-${var.Environment}-redis-service"
-#   cluster             = aws_ecs_cluster.cluster.id
-#   task_definition     = aws_ecs_task_definition.redis_task.arn
-#   launch_type         = "FARGATE"
-#   desired_count       = 1
-#   scheduling_strategy = "REPLICA"
-#
-#   network_configuration {
-#     subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-#     security_groups = [aws_security_group.redis_sg.id]
-#     assign_public_ip = false
-#   }
-# }
+// ai 서버
+resource "aws_ecs_task_definition" "ai_task" {
+  family                   = "${var.APP_NAME}-ai"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.execution_role.arn
+  task_role_arn            = aws_iam_role.execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "${var.APP_NAME}-${var.Environment}-ai-container",
+      image = "${aws_ecr_repository.ai.repository_url}:latest"
+      essential = true,
+      cpu       = 256,
+      memory    = 512,
+      portMappings = [
+        {
+          containerPort = 8086,
+          hostPort      = 8086,
+          protocol      = "tcp"
+        }
+      ],
+      environment = [
+        {
+          name  = "SPRING_PROFILES_ACTIVE"
+          value = "prod"
+        },
+        {
+          name  = "GOOGLE_API_KEY"
+          value = var.google_api_key
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = "/ecs/${var.APP_NAME}"
+          awslogs-region        = var.AWS_REGION
+          awslogs-stream-prefix = "ai"
+        }
+      }
+    }
+  ])
+
+  tags = {
+    Name        = "${var.APP_NAME}-ai-task"
+    Environment = var.Environment
+  }
+}
+
+resource "aws_ecs_service" "ai_service" {
+  name                 = "${var.APP_NAME}-${var.Environment}-ai-service"
+  cluster              = aws_ecs_cluster.cluster.id
+  task_definition      = aws_ecs_task_definition.ai_task.arn
+  launch_type          = "FARGATE"
+  desired_count        = 1
+  scheduling_strategy  = "REPLICA"
+
+  network_configuration {
+    subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip = false
+  }
+
+  service_registries {
+    registry_arn   = aws_service_discovery_service.ai.arn
+    container_name = "${var.APP_NAME}-${var.Environment}-ai-container"
+  }
+}
 
 locals {
-  scalable_services = [for svc in var.msa_services : svc if !(svc == "notification" || svc == "scheduling")]
+  scalable_services = [for svc in var.msa_services : svc if !(svc == "notification" || svc == "scheduling" || svc == "ai")]
 }
 
 # 오토스케일링 타겟 (user, store, coupon만)
