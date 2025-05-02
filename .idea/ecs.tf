@@ -182,6 +182,7 @@ resource "aws_ecs_task_definition" "msa_task" {
       {
         "name": "adot-collector",
         "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함.
+        # "image": "${aws_ecr_repository.adot_collector.repository_url}:${var.adot_image_tag}",
         "essential": true,
         "cpu": 256,
         "memory": 512,
