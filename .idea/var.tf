@@ -26,10 +26,10 @@ variable "enable_monitoring_sidecar" {
   default     = false # 기본적으로 활성화, 필요시 false로 변경하여 비활성화
 }
 
-variable "adot_image_tag" {
-  description = "The Docker image tag for the custom ADOT Collector image in ECR"
-  type        = string
-}
+# variable "adot_image_tag" {
+#   description = "The Docker image tag for the custom ADOT Collector image in ECR"
+#   type        = string
+# }
 
 #  variable "adot_image_uri" {
 #  description = "The ECR repository URI for the custom ADOT Collector image"
