@@ -142,7 +142,7 @@ resource "aws_ecs_task_definition" "msa_task" {
           },
           {
             name  = "REDIS_HOST"
-            value = "10.0.11.158"
+            value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
           },
           {
             name  = "RDS_URL"
@@ -205,8 +205,7 @@ resource "aws_ecs_task_definition" "msa_task" {
           }
         }
       }
-    ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
-
+    ] : [] # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
   ))
 
   tags = {
