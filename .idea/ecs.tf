@@ -240,6 +240,38 @@ resource "aws_ecs_service" "msa_service" {
   }
 }
 
+resource "aws_grafana_workspace" "couponmoa_grafana" {
+  account_access_type = "CURRENT_ACCOUNT" # 또는 "ORGANIZATION"
+  authentication_providers = ["AWS_ACCOUNT"]
+  name = "${var.APP_NAME}-${var.Environment}-grafana"
+  permission_type = "SERVICE_MANAGED"
+
+  tags = {
+    Name        = "${var.APP_NAME}-grafana-workspace"
+    Environment = var.Environment
+    Project     = "CouponMoa"
+  }
+}
+
+resource "aws_grafana_workspace_data_source" "amp" {
+  workspace_id = aws_grafana_workspace.couponmoa_grafana.id
+  name         = "AMP-${var.Environment}"
+  type         = "prometheus"
+
+  prometheus_options {
+    http_method = "POST"
+    url         = aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint
+  }
+
+  tags = {
+    Name        = "AMP-Datasource"
+    Environment = var.Environment
+    Project     = "CouponMoa"
+  }
+
+  depends_on = [aws_grafana_workspace.couponmoa_grafana, aws_prometheus_workspace.couponmoa_amp]
+}
+
 // ai 서버
 resource "aws_ecs_task_definition" "ai_task" {
   family                   = "${var.APP_NAME}-ai"
