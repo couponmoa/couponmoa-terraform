@@ -29,10 +29,10 @@ variable "enable_monitoring_sidecar" {
 variable "adot_image_tag" {
   description = "The Docker image tag for the custom ADOT Collector image in ECR"
   type        = string
-  default     = "latest" # CI/CD 파이프라인에서 실제 태그로 전달받는 것이 좋음
 }
 
 #  variable "adot_image_uri" {
+
 #  description = "The ECR repository URI for the custom ADOT Collector image"#
 #  type        = string
 #  # 기본값을 설정하거나, ecr.tf의 output을 참조하거나, CI/CD에서 전달받아야 함

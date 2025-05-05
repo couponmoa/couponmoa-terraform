@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "gateway_task" {
         },
         {
           name  = "REDIS_HOST"
-          value = "10.0.11.158"
+          value = "couponmoa-dev-redis.lstwrk.0001.apn2.cache.amazonaws.com"
         }
       ],
       logConfiguration = {
@@ -97,7 +97,7 @@ resource "aws_ecs_task_definition" "msa_task" {
   cpu                    = var.enable_monitoring_sidecar ? "512" : "256" # 모니터링 활성화 시 512, 비활성화 시 256
   memory                 = var.enable_monitoring_sidecar ? "1024" : "512" # 모니터링 활성화 시 1024, 비활성화 시 512
   execution_role_arn     = aws_iam_role.execution_role.arn
-  task_role_arn          = aws_iam_role.execution_role.arn 
+  task_role_arn          = aws_iam_role.execution_role.arn
 
 
   container_definitions = jsonencode(concat(
@@ -180,16 +180,16 @@ resource "aws_ecs_task_definition" "msa_task" {
 // enable_monitoring_sidecar 변수가 true일 때만 ADOT Collector 컨테이너 정의를 배열에 추가
 var.enable_monitoring_sidecar ? [
  {
-      "name": "adot-collector",                            
-      "image": "amazon/aws-otel-collector:latest",  // ADOT Collector 커스텀 이미지 빌드 및 푸시 이후에 변경되어야함. 
-      "essential": true,                                  
-      "cpu": 256,                                        
-      "memory": 512,                                     
+      "name": "adot-collector",
+      "image": "${aws_ecr_repository.adot_collector.repository_url}:${var.adot_image_tag}",      
+      "essential": true,
+      "cpu": 256,
+      "memory": 512,
       "command": ["--config=/etc/otel/config.yaml"],
       "environment": [
         {
           "name": "AWS_REGION",
-          "value": var.AWS_REGION                         
+          "value": var.AWS_REGION
         },
         {
           "name": "AMP_REMOTE_WRITE_URL",
@@ -201,12 +201,11 @@ var.enable_monitoring_sidecar ? [
          "options": {
            "awslogs-group": "/ecs/${var.APP_NAME}",
            "awslogs-region": var.AWS_REGION,
-           "awslogs-stream-prefix": "${each.key}-adot" 
+           "awslogs-stream-prefix": "${each.key}-adot"
          }
        }
     }
-    ] : []) # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
-
+    ] : [] # false이면 빈 배열 추가 -> 아무것도 추가 안 됨
   ))
 
   tags = {
@@ -241,6 +240,38 @@ resource "aws_ecs_service" "msa_service" {
   }
 }
 
+resource "aws_grafana_workspace" "couponmoa_grafana" {
+  account_access_type = "CURRENT_ACCOUNT" # 또는 "ORGANIZATION"
+  authentication_providers = ["AWS_ACCOUNT"]
+  name = "${var.APP_NAME}-${var.Environment}-grafana"
+  permission_type = "SERVICE_MANAGED"
+
+  tags = {
+    Name        = "${var.APP_NAME}-grafana-workspace"
+    Environment = var.Environment
+    Project     = "CouponMoa"
+  }
+}
+
+resource "aws_grafana_workspace_data_source" "amp" {
+  workspace_id = aws_grafana_workspace.couponmoa_grafana.id
+  name         = "AMP-${var.Environment}"
+  type         = "prometheus"
+
+  prometheus_options {
+    http_method = "POST"
+    url         = aws_prometheus_workspace.couponmoa_amp.prometheus_endpoint
+  }
+
+  tags = {
+    Name        = "AMP-Datasource"
+    Environment = var.Environment
+    Project     = "CouponMoa"
+  }
+
+  depends_on = [aws_grafana_workspace.couponmoa_grafana, aws_prometheus_workspace.couponmoa_amp]
+}
+
 // ai 서버
 resource "aws_ecs_task_definition" "ai_task" {
   family                   = "${var.APP_NAME}-ai"
@@ -254,7 +285,7 @@ resource "aws_ecs_task_definition" "ai_task" {
   container_definitions = jsonencode([
     {
       name      = "${var.APP_NAME}-${var.Environment}-ai-container",
-      image = "${aws_ecr_repository.ai.repository_url}:latest"
+      image = "${aws_ecr_repository.ai.repository_url}:latest",
       essential = true,
       cpu       = 256,
       memory    = 512,
@@ -313,7 +344,7 @@ resource "aws_ecs_service" "ai_service" {
 }
 
 resource "aws_prometheus_workspace" "couponmoa_amp" {
-  alias = "couponmoa-workspace-${var.Environment}" 
+  alias = "couponmoa-workspace-${var.Environment}"
 
   tags = {
     Name        = "${var.APP_NAME}-amp-workspace"
@@ -356,4 +387,3 @@ resource "aws_appautoscaling_policy" "msa_cpu_scaling_policy" {
     scale_out_cooldown = 60
   }
 }
-

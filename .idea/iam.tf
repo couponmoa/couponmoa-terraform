@@ -137,3 +137,37 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
   role       = aws_iam_role.execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
+
+# AMG 워크스페이스 접근 권한
+resource "aws_iam_policy" "amg_workspace_access_policy" {
+  name        = "${var.APP_NAME}-${var.Environment}-amg-workspace-access"
+  description = "Allow access to AMG workspace"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "grafana:GetWorkspace",
+          "grafana:DescribeWorkspace",
+          "grafana:AuthorizeSession"
+          "grafana:ListWorkspaces"
+        ],
+        Resource = aws_grafana_workspace.couponmoa_grafana.arn # AMG Workspace ARN
+      },
+    ]
+  })
+}
+
+# IAM 사용자에게 권한 부여 
+resource "aws_iam_user_policy_attachment" "attach_amg_access_to_user" {
+  user       = "couponmoa-accessuser-hojun" 
+  policy_arn = aws_iam_policy.amg_workspace_access_policy.arn
+}
+
+# IAM 그룹에 권한 부여 
+resource "aws_iam_group_policy_attachment" "attach_amg_access_to_group" {
+  group      = "grafana" 
+  policy_arn = aws_iam_policy.amg_workspace_access_policy.arn
+}
