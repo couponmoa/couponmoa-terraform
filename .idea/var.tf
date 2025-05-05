@@ -32,11 +32,12 @@ variable "adot_image_tag" {
 }
 
 #  variable "adot_image_uri" {
-#  description = "The ECR repository URI for the custom ADOT Collector image"
+
+#  description = "The ECR repository URI for the custom ADOT Collector image"#
 #  type        = string
-  # 기본값을 설정하거나, ecr.tf의 output을 참조하거나, CI/CD에서 전달받아야 함
-  # ex default = "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/couponmoa-dev-adot-collector-ecr"
-# }
+#  # 기본값을 설정하거나, ecr.tf의 output을 참조하거나, CI/CD에서 전달받아야 함
+#  # ex default = "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/couponmoa-dev-adot-collector-ecr"
+#  }
 
 variable "DB_USER" {}
 variable "DB_PASSWORD" {}
